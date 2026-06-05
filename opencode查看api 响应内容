@@ -1,3 +1,0 @@
-先用opencode --log-level DEBUG 启动 它，让它记录日志， 在 C:\Users\leng\.local\share\opencode\log里，
-把日志打开，搜session id
-cmd 输入opencode export ses_167831055ffe1kTYYYh24RAdq0      ，就能查看了
