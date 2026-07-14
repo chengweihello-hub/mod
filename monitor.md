@@ -1,3 +1,7 @@
+仔细分析这些trace的input/output与metadata， 聚合提取并创建出3-5个共性标注 并给每条trace打上标注
+
+
+
 <img width="2214" height="569" alt="image" src="https://github.com/user-attachments/assets/e03baaab-f27b-4b76-af07-abda3bde4d19" />
 <img width="663" height="507" alt="image" src="https://github.com/user-attachments/assets/6292a252-f74e-4d49-848a-a63a503a913c" />
 <img width="555" height="486" alt="image" src="https://github.com/user-attachments/assets/65995c28-626f-481f-b701-f3c63426e276" />
