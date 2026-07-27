@@ -1,3 +1,5 @@
+https://sls.aliyun.com/doc/playground/agentloopdemo.html
+
 仔细分析这些trace的input/output与metadata， 聚合提取并创建出3-5个共性标注 并给每条trace打上标注
 
 
