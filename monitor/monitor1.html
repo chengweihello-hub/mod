@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent 告警监控系统</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+:root{
+  --primary:#0067d1;
+  --primary-light:#e6f0fb;
+  --primary-dark:#0052a8;
+  --bg:#f5f7fa;
+  --card:#ffffff;
+  --text:#1f2937;
+  --text-sub:#6b7280;
+  --text-muted:#9ca3af;
+  --border:#e5e7eb;
+  --border-light:#f0f2f5;
+  --p0:#ef4444;
+  --p1:#f97316;
+  --p2:#eab308;
+  --p3:#0067d1;
+  --p0-bg:#fef2f2;
+  --p1-bg:#fff7ed;
+  --p2-bg:#fefce8;
+  --p3-bg:#e6f0fb;
+  --ok:#10b981;
+  --ok-bg:#ecfdf5;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-lg:0 10px 30px rgba(0,0,0,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;background:none}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#9ca3af}
+
+/* layout */
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;background:#0b1f3a;color:#cbd5e1;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar .logo{padding:20px 18px;font-size:17px;font-weight:700;color:#fff;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar .logo .dot{width:28px;height:28px;background:var(--primary);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.sidebar .nav{flex:1;padding:12px 10px;overflow-y:auto}
+.sidebar .nav-group-title{font-size:11px;color:#64748b;padding:14px 10px 6px;letter-spacing:.5px}
+.sidebar .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#cbd5e1;cursor:pointer;font-size:14px;margin-bottom:2px;transition:all .15s}
+.sidebar .nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.sidebar .nav-item.active{background:var(--primary);color:#fff}
+.sidebar .nav-item .icon{width:18px;text-align:center;font-size:15px}
+.sidebar .nav-item .badge{margin-left:auto;background:var(--p0);color:#fff;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:600}
+.sidebar .footer{padding:14px 18px;border-top:1px solid rgba(255,255,255,.08);font-size:12px;color:#64748b}
+
+.main{flex:1;margin-left:220px;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:60px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;position:sticky;top:0;z-index:50}
+.topbar .crumb{display:flex;align-items:center;gap:8px;font-size:15px}
+.topbar .crumb .sep{color:var(--text-muted)}
+.topbar .crumb .cur{color:var(--text);font-weight:600}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:16px}
+.topbar .search{position:relative}
+.topbar .search input{width:240px;height:36px;border:1px solid var(--border);border-radius:8px;padding:0 12px 0 34px;font-size:13px;background:var(--bg);transition:border .15s}
+.topbar .search input:focus{border-color:var(--primary);background:#fff}
+.topbar .search .ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px}
+.topbar .bell{position:relative;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text-sub)}
+.topbar .bell:hover{background:var(--bg)}
+.topbar .bell .red-dot{position:absolute;top:7px;right:8px;width:8px;height:8px;background:var(--p0);border-radius:50%;border:2px solid #fff}
+.topbar .user{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px 4px 4px;border-radius:8px}
+.topbar .user:hover{background:var(--bg)}
+.topbar .user .avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4b9bf5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.topbar .user .name{font-size:13px}
+
+.content{padding:24px;flex:1}
+
+/* common */
+.page-title{font-size:22px;font-weight:700;margin-bottom:4px}
+.page-desc{color:var(--text-sub);font-size:13px;margin-bottom:20px}
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;transition:all .15s;border:1px solid transparent}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-default{background:#fff;border-color:var(--border);color:var(--text)}
+.btn-default:hover{border-color:var(--primary);color:var(--primary)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-link{color:var(--primary);padding:4px 8px;font-size:13px}
+.btn-link:hover{text-decoration:underline}
+.btn-danger{color:var(--p0)}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:500;line-height:1.5}
+.p0{background:var(--p0-bg);color:var(--p0)}
+.p1{background:var(--p1-bg);color:var(--p1)}
+.p2{background:var(--p2-bg);color:var(--p2)}
+.p3{background:var(--p3-bg);color:var(--p3)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.dot.p0{background:var(--p0)}
+.dot.p1{background:var(--p1)}
+.dot.p2{background:var(--p2)}
+.dot.p3{background:var(--p3)}
+.status{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:2px 8px;border-radius:5px;font-weight:500}
+.status-trigger{background:var(--p0-bg);color:var(--p0)}
+.status-ack{background:var(--p1-bg);color:var(--p1)}
+.status-recovered{background:var(--ok-bg);color:var(--ok)}
+.status-muted{background:#f3f4f6;color:var(--text-sub)}
+
+/* stat cards */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat-card .label{color:var(--text-sub);font-size:13px;display:flex;align-items:center;gap:6px}
+.stat-card .value{font-size:30px;font-weight:700;margin:6px 0 2px;line-height:1}
+.stat-card .trend{font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:4px}
+.stat-card .trend.up{color:var(--p0)}
+.stat-card .trend.down{color:var(--ok)}
+.stat-card .icon-box{position:absolute;right:18px;top:18px;width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.stat-card.c-red .icon-box{background:var(--p0-bg);color:var(--p0)}
+.stat-card.c-orange .icon-box{background:var(--p1-bg);color:var(--p1)}
+.stat-card.c-green .icon-box{background:var(--ok-bg);color:var(--ok)}
+.stat-card.c-blue .icon-box{background:var(--p3-bg);color:var(--primary)}
+
+/* filter bar */
+.filter-bar{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;box-shadow:var(--shadow)}
+.filter-bar .f-item{display:flex;align-items:center;gap:6px}
+.filter-bar label{font-size:13px;color:var(--text-sub)}
+.filter-bar select,.filter-bar input{height:34px;border:1px solid var(--border);border-radius:7px;padding:0 10px;font-size:13px;background:#fff;min-width:120px}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--primary);outline:none}
+.filter-bar .spacer{flex:1}
+.filter-bar .search-inp{min-width:200px}
+
+/* table */
+.table-wrap{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:#f8fafc;text-align:left;padding:12px 14px;font-weight:600;color:var(--text-sub);border-bottom:1px solid var(--border);white-space:nowrap;font-size:12px}
+tbody td{padding:12px 14px;border-bottom:1px solid var(--border-light);vertical-align:middle}
+tbody tr:hover{background:#f9fafb}
+tbody tr:last-child td{border-bottom:none}
+.text-sub{color:var(--text-sub)}
+.text-muted{color:var(--text-muted)}
+.mono{font-family:"SF Mono",Consolas,Monaco,monospace;font-size:12px}
+.cell-actions{display:flex;gap:4px}
+
+/* progress mini */
+.mini-prog{display:flex;align-items:center;gap:8px;font-size:12px}
+.mini-prog .bar{width:90px;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;position:relative}
+.mini-prog .bar .fill{height:100%;border-radius:3px}
+.mini-prog .val{font-family:monospace;white-space:nowrap}
+
+/* pagination */
+.pager{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff;border-top:1px solid var(--border)}
+.pager .info{font-size:13px;color:var(--text-sub)}
+.pager .pages{display:flex;gap:4px}
+.pager .pages button{min-width:30px;height:30px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);background:#fff}
+.pager .pages button:hover:not(:disabled){border-color:var(--primary);color:var(--primary)}
+.pager .pages button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.pager .pages button:disabled{color:var(--text-muted);cursor:not-allowed}
+
+/* config rules */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.toolbar .left{display:flex;gap:8px}
+
+/* drawer */
+.drawer-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none}
+.drawer-mask.show{display:block}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:520px;background:#fff;z-index:201;box-shadow:var(--shadow-lg);transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column}
+.drawer.show{transform:translateX(0)}
+.drawer .d-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.drawer .d-header h3{font-size:17px;font-weight:600}
+.drawer .d-header .close{font-size:22px;color:var(--text-sub);width:30px;height:30px;border-radius:6px}
+.drawer .d-header .close:hover{background:var(--bg)}
+.drawer .d-body{flex:1;overflow-y:auto;padding:22px}
+.drawer .d-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.form-row{margin-bottom:18px}
+.form-row label{display:block;font-size:13px;color:var(--text);margin-bottom:6px;font-weight:500}
+.form-row label .req{color:var(--p0);margin-left:2px}
+.form-row select,.form-row input{width:100%;height:38px;border:1px solid var(--border);border-radius:7px;padding:0 12px;font-size:13px;background:#fff}
+.form-row select:focus,.form-row input:focus{border-color:var(--primary);outline:none}
+.form-row .hint{font-size:12px;color:var(--text-muted);margin-top:4px}
+.form-row .inline{display:flex;gap:8px}
+.form-row .inline > *{flex:1}
+.threshold-row{display:flex;gap:8px;align-items:center}
+.threshold-row select{width:130px;flex:none}
+.threshold-row input{flex:1}
+.switch{position:relative;width:38px;height:22px;background:#d1d5db;border-radius:11px;cursor:pointer;transition:background .2s}
+.switch.on{background:var(--primary)}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:left .2s}
+.switch.on::after{left:18px}
+
+/* notification page */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tabs .tab{padding:10px 16px;font-size:14px;color:var(--text-sub);cursor:pointer;border-bottom:2px solid transparent;font-weight:500}
+.tabs .tab.active{color:var(--primary);border-color:var(--primary)}
+.tabs .tab .cnt{font-size:12px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px;color:var(--text-sub)}
+.tabs .tab.active .cnt{background:var(--primary-light);color:var(--primary)}
+.notif-list{display:flex;flex-direction:column;gap:8px}
+.notif-item{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;gap:12px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.notif-item:hover{border-color:var(--primary);box-shadow:0 4px 12px rgba(0,103,209,.1)}
+.notif-item.unread{border-left:3px solid var(--primary)}
+.notif-item .lvl-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+.notif-item .body{flex:1;min-width:0}
+.notif-item .title{font-size:14px;font-weight:600;margin-bottom:3px}
+.notif-item .summary{font-size:13px;color:var(--text-sub);margin-bottom:5px}
+.notif-item .meta{font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center}
+.notif-item .meta .agent{color:var(--primary)}
+.notif-item .unread-dot{width:8px;height:8px;background:var(--primary);border-radius:50%;align-self:center;flex:none}
+
+.notif-settings{margin-top:24px}
+.notif-settings h3{font-size:16px;font-weight:600;margin-bottom:14px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border-light)}
+.setting-row:last-child{border:none}
+.setting-row .info .t{font-size:14px;font-weight:500}
+.setting-row .info .d{font-size:12px;color:var(--text-sub);margin-top:2px}
+
+/* detail page */
+.detail-head{background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow)}
+.detail-head .row1{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.detail-head h2{font-size:20px;font-weight:700}
+.detail-head .desc{color:var(--text-sub);font-size:13px;margin-bottom:14px}
+.detail-head .actions{display:flex;gap:8px}
+.detail-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.detail-grid .item{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 16px;box-shadow:var(--shadow)}
+.detail-grid .item .k{font-size:12px;color:var(--text-sub);margin-bottom:4px}
+.detail-grid .item .v{font-size:15px;font-weight:600}
+.detail-grid .item .v.mono{font-family:monospace}
+.detail-chart{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
+.detail-chart .ctitle{font-size:15px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.detail-chart .cdesc{font-size:12px;color:var(--text-sub);margin-bottom:8px}
+.detail-chart #chart{height:300px}
+.timeline{background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px 24px;box-shadow:var(--shadow);margin-bottom:16px}
+.timeline h3{font-size:15px;font-weight:600;margin-bottom:18px}
+.tl-item{display:flex;gap:14px;padding-bottom:18px;position:relative}
+.tl-item:last-child{padding-bottom:0}
+.tl-item::before{content:"";position:absolute;left:9px;top:22px;bottom:-4px;width:2px;background:var(--border)}
+.tl-item:last-child::before{display:none}
+.tl-item .tl-dot{width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px var(--primary);flex:none;margin-top:2px;z-index:1}
+.tl-item .tl-dot.p0{box-shadow:0 0 0 2px var(--p0)}
+.tl-item .tl-dot.ok{box-shadow:0 0 0 2px var(--ok)}
+.tl-item .tl-body{flex:1}
+.tl-item .tl-title{font-size:14px;font-weight:600}
+.tl-item .tl-meta{font-size:12px;color:var(--text-muted);margin-top:2px}
+.tl-item .tl-note{font-size:13px;color:var(--text-sub);margin-top:4px;background:var(--bg);padding:8px 10px;border-radius:6px}
+.handle-block{background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px 24px;box-shadow:var(--shadow)}
+.handle-block h3{font-size:15px;font-weight:600;margin-bottom:14px}
+.handle-input{display:flex;gap:8px;margin-bottom:14px}
+.handle-input input{flex:1;height:38px;border:1px solid var(--border);border-radius:7px;padding:0 12px;font-size:13px}
+.handle-input input:focus{border-color:var(--primary);outline:none}
+.handle-list{display:flex;flex-direction:column;gap:10px}
+.handle-list .h-item{display:flex;gap:10px;padding:10px 12px;background:var(--bg);border-radius:8px}
+.handle-list .h-item .av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4b9bf5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+.handle-list .h-item .ct{flex:1}
+.handle-list .h-item .ct .who{font-size:13px;font-weight:500}
+.handle-list .h-item .ct .tm{font-size:12px;color:var(--text-muted);margin-left:6px}
+.handle-list .h-item .ct .tx{font-size:13px;color:var(--text-sub);margin-top:2px}
+
+.empty{text-align:center;padding:40px;color:var(--text-muted);font-size:13px}
+.flex{display:flex;gap:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo"><div class="dot">⚠</div> Agent 告警监控</div>
+    <nav class="nav" id="nav">
+      <div class="nav-group-title">监控</div>
+      <div class="nav-item active" data-route="alerts"><span class="icon">📋</span> 告警列表</div>
+      <div class="nav-item" data-route="config"><span class="icon">⚙</span> 告警配置</div>
+      <div class="nav-item" data-route="detail"><span class="icon">🔍</span> 告警详情</div>
+      <div class="nav-group-title">我的</div>
+      <div class="nav-item" data-route="notification"><span class="icon">🔔</span> 通知中心 <span class="badge" id="navBadge">3</span></div>
+    </nav>
+    <div class="footer">v1.0 · 运维监控中心</div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">
+        <span>告警监控</span>
+        <span class="sep">/</span>
+        <span class="cur" id="crumbCur">告警列表</span>
+      </div>
+      <div class="right">
+        <div class="search">
+          <span class="ico">🔍</span>
+          <input type="text" placeholder="搜索告警 / Agent..." id="globalSearch">
+        </div>
+        <div class="bell" onclick="navigate('notification')">
+          🔔<span class="red-dot" id="bellDot"></span>
+        </div>
+        <div class="user">
+          <div class="avatar">运维</div>
+          <span class="name">运维管理员</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- Drawer -->
+<div class="drawer-mask" id="drawerMask"></div>
+<div class="drawer" id="drawer">
+  <div class="d-header">
+    <h3 id="drawerTitle">新建告警规则</h3>
+    <button class="close" onclick="closeDrawer()">×</button>
+  </div>
+  <div class="d-body" id="drawerBody"></div>
+  <div class="d-footer">
+    <button class="btn btn-default" onclick="closeDrawer()">取消</button>
+    <button class="btn btn-primary" id="drawerSave">保存规则</button>
+  </div>
+</div>
+
+<script>
+/* ============ Mock Data ============ */
+const AGENTS = [
+  {id:'agent-001',name:'客服智能助手Bot',model:'GLM-4-0520'},
+  {id:'agent-002',name:'代码生成助手',model:'Claude-3.5-Sonnet'},
+  {id:'agent-003',name:'文档问答Agent',model:'GPT-4o'},
+  {id:'agent-004',name:'智能搜索Agent',model:'GLM-4-Air'},
+  {id:'agent-005',name:'数据分析助手',model:'GLM-4-Plus'},
+];
+
+const METRICS = {
+  token_usage:{name:'Token 消耗量',unit:'tokens',typical:'500k'},
+  ttft:{name:'首 Token 响应时间',unit:'ms',typical:'3000'},
+  latency:{name:'完整响应耗时',unit:'ms',typical:'30000'},
+  error_rate:{name:'调用错误率',unit:'%',typical:'5'},
+  qps:{name:'并发请求QPS',unit:'req/s',typical:'200'},
+  cost:{name:'单次对话成本',unit:'元',typical:'0.5'},
+  ctx_len:{name:'上下文长度',unit:'tokens',typical:'30000'},
+};
+
+const RULES = [
+  {id:'R001',agentId:'agent-001',metric:'token_usage',op:'>',threshold:500000,duration:5,level:'P0',enabled:true,channel:'站内信',name:'客服Bot Token 消耗异常'},
+  {id:'R002',agentId:'agent-001',metric:'ttft',op:'>',threshold:3000,duration:3,level:'P1',enabled:true,channel:'站内信',name:'客服Bot 首 Token 延迟告警'},
+  {id:'R003',agentId:'agent-002',metric:'error_rate',op:'>',threshold:5,duration:5,level:'P0',enabled:true,channel:'站内信',name:'代码助手错误率监控'},
+  {id:'R004',agentId:'agent-003',metric:'latency',op:'>',threshold:30000,duration:5,level:'P2',enabled:true,channel:'站内信',name:'文档问答响应超时'},
+  {id:'R005',agentId:'agent-004',metric:'qps',op:'>',threshold:200,duration:2,level:'P1',enabled:true,channel:'站内信',name:'搜索Agent 并发过载'},
+  {id:'R006',agentId:'agent-005',metric:'cost',op:'>',threshold:0.5,duration:10,level:'P3',enabled:false,channel:'站内信',name:'数据分析成本监控'},
+];
+
+let ALERTS = [
+  {id:'A20260805-001',title:'客服Bot Token 消耗量超出阈值',level:'P0',agentId:'agent-001',metric:'token_usage',currentValue:682341,threshold:500000,status:'triggered',triggerTime:'2026-08-05 14:32:18',duration:'8分钟',ruleId:'R001',desc:'客服智能助手Bot 在过去5分钟内 Token 消耗量达到 682,341，超过阈值 500,000，可能存在异常调用或循环触发。'},
+  {id:'A20260805-002',title:'代码助手调用错误率飙升至 8.4%',level:'P0',agentId:'agent-002',metric:'error_rate',currentValue:8.4,threshold:5,status:'acknowledged',triggerTime:'2026-08-05 13:18:42',duration:'15分钟',ruleId:'R003',desc:'代码生成助手 在过去5分钟内调用错误率达到 8.4%，超过阈值 5%，疑似上游模型限流或代码执行环境异常。'},
+  {id:'A20260805-003',title:'搜索Agent 并发QPS 超过阈值',level:'P1',agentId:'agent-004',metric:'qps',currentValue:268,threshold:200,status:'triggered',triggerTime:'2026-08-05 14:28:11',duration:'4分钟',ruleId:'R005',desc:'智能搜索Agent 当前并发QPS 268，超过阈值 200，流量突增可能导致响应变慢。'},
+  {id:'A20260805-004',title:'客服Bot 首 Token 响应延迟达 3.6s',level:'P1',agentId:'agent-001',metric:'ttft',currentValue:3621,threshold:3000,status:'acknowledged',triggerTime:'2026-08-05 12:45:09',duration:'6分钟',ruleId:'R002',desc:'客服智能助手Bot 首 Token 响应时间 3,621ms，超过阈值 3,000ms，可能受上游模型负载影响。'},
+  {id:'A20260805-005',title:'文档问答 Agent 响应耗时超时',level:'P2',agentId:'agent-003',metric:'latency',currentValue:34820,threshold:30000,status:'recovered',triggerTime:'2026-08-05 10:22:31',duration:'12分钟',ruleId:'R004',desc:'文档问答Agent 完整响应耗时 34,820ms，超过阈值 30,000ms，已于 11:08 自动恢复。'},
+  {id:'A20260805-006',title:'数据分析助手单次对话成本偏高',level:'P3',agentId:'agent-005',metric:'cost',currentValue:0.62,threshold:0.5,status:'muted',triggerTime:'2026-08-05 09:15:00',duration:'20分钟',ruleId:'R006',desc:'数据分析助手单次对话成本 0.62 元，超过阈值 0.5 元，已静默观察。'},
+  {id:'A20260804-021',title:'客服Bot Token 消耗量超出阈值',level:'P0',agentId:'agent-001',metric:'token_usage',currentValue:521800,threshold:500000,status:'recovered',triggerTime:'2026-08-04 22:14:08',duration:'7分钟',ruleId:'R001',desc:'客服智能助手Bot Token 消耗量达 521,800，超过阈值 500,000，已于 22:21 自动恢复。'},
+  {id:'A20260804-018',title:'代码助手调用错误率告警',level:'P1',agentId:'agent-002',metric:'error_rate',currentValue:6.1,threshold:5,status:'recovered',triggerTime:'2026-08-04 18:55:22',duration:'10分钟',ruleId:'R003',desc:'代码生成助手 错误率 6.1%，超过阈值 5%，已于 19:05 自动恢复。'},
+  {id:'A20260804-012',title:'搜索Agent 并发QPS 超过阈值',level:'P2',agentId:'agent-004',metric:'qps',currentValue:212,threshold:200,status:'recovered',triggerTime:'2026-08-04 15:33:11',duration:'3分钟',ruleId:'R005',desc:'智能搜索Agent 并发QPS 212，超过阈值 200，已于 15:36 自动恢复。'},
+  {id:'A20260804-007',title:'文档问答 Agent 响应耗时超时',level:'P3',agentId:'agent-003',metric:'latency',currentValue:31200,threshold:30000,status:'recovered',triggerTime:'2026-08-04 08:40:51',duration:'5分钟',ruleId:'R004',desc:'文档问答Agent 响应耗时 31,200ms，超过阈值 30,000ms，已于 08:45 自动恢复。'},
+];
+
+let NOTIFICATIONS = [
+  {id:'N001',alertId:'A20260805-001',title:'P0 告警：客服Bot Token 消耗量超出阈值',summary:'Token 消耗量 682,341 超过阈值 500,000',agentId:'agent-001',level:'P0',time:'2026-08-05 14:32:18',read:false},
+  {id:'N002',alertId:'A20260805-002',title:'P0 告警：代码助手调用错误率飙升至 8.4%',summary:'错误率 8.4% 超过阈值 5%',agentId:'agent-002',level:'P0',time:'2026-08-05 13:18:42',read:false},
+  {id:'N003',alertId:'A20260805-003',title:'P1 告警：搜索Agent 并发QPS 超过阈值',summary:'QPS 268 超过阈值 200',agentId:'agent-004',level:'P1',time:'2026-08-05 14:28:11',read:false},
+  {id:'N004',alertId:'A20260805-004',title:'P1 告警：客服Bot 首 Token 响应延迟达 3.6s',summary:'TTFT 3,621ms 超过阈值 3,000ms',agentId:'agent-001',level:'P1',time:'2026-08-05 12:45:09',read:true},
+  {id:'N005',alertId:'A20260805-005',title:'P2 告警已恢复：文档问答 Agent 响应耗时超时',summary:'响应耗时 34,820ms，已于 11:08 恢复',agentId:'agent-003',level:'P2',time:'2026-08-05 11:08:22',read:true},
+  {id:'N006',alertId:'A20260804-021',title:'P0 告警已恢复：客服Bot Token 消耗量超出阈值',summary:'Token 消耗 521,800，已于 22:21 恢复',agentId:'agent-001',level:'P0',time:'2026-08-04 22:21:00',read:true},
+];
+
+let HANDLE_RECORDS = {
+  'A20260805-002':[
+    {user:'张运维',time:'2026-08-05 13:22',text:'已确认告警，正在排查上游模型 API 限流情况。'},
+    {user:'张运维',time:'2026-08-05 13:35',text:'定位到原因是代码执行沙箱超时，已扩容沙箱实例，错误率回落中。'},
+  ],
+  'A20260805-004':[
+    {user:'李SRE',time:'2026-08-05 12:50',text:'已确认，上游 GLM-4-0520 负载较高，已切流到备用模型。'},
+  ],
+};
+
+let TIMELINE = {
+  'A20260805-001':[
+    {type:'trigger',title:'告警触发',time:'2026-08-05 14:32:18',note:'Token 消耗量 682,341 超过阈值 500,000，持续 5 分钟触发'},
+  ],
+  'A20260805-002':[
+    {type:'trigger',title:'告警触发',time:'2026-08-05 13:18:42',note:'错误率 8.4% 超过阈值 5%'},
+    {type:'ack',title:'告警确认',time:'2026-08-05 13:22:10',note:'运维管理员 确认告警，开始处置'},
+    {type:'ack',title:'处置中',time:'2026-08-05 13:35:00',note:'扩容代码执行沙箱实例，错误率回落'},
+  ],
+  'A20260805-003':[
+    {type:'trigger',title:'告警触发',time:'2026-08-05 14:28:11',note:'QPS 268 超过阈值 200'},
+  ],
+  'A20260805-004':[
+    {type:'trigger',title:'告警触发',time:'2026-08-05 12:45:09',note:'TTFT 3,621ms 超过阈值 3,000ms'},
+    {type:'ack',title:'告警确认',time:'2026-08-05 12:50:00',note:'切流到备用模型'},
+  ],
+  'A20260805-005':[
+    {type:'trigger',title:'告警触发',time:'2026-08-05 10:22:31',note:'响应耗时 34,820ms'},
+    {type:'recover',title:'告警恢复',time:'2026-08-05 11:08:22',note:'指标回归阈值以下，系统自动恢复'},
+  ],
+};
+
+let settings = {
+  dnd:false, dndStart:'22:00', dndEnd:'07:00',
+  onlyP0P1:true, batchRead:false,
+};
+
+let chartInstance = null;
+let filterState = {level:'',status:'',agent:'',metric:'',keyword:'',page:1,pageSize:8};
+let notifTab = 'unread';
+
+/* ============ Helpers ============ */
+const $ = s => document.querySelector(s);
+const agentName = id => (AGENTS.find(a=>a.id===id)||{}).name || id;
+const metricInfo = k => METRICS[k] || {name:k,unit:''};
+const levelTag = lv => `<span class="tag ${lv.toLowerCase()}"><span class="dot ${lv.toLowerCase()}"></span>${lv}</span>`;
+const statusTag = s => {
+  const m={triggered:['status-trigger','触发中'],acknowledged:['status-ack','已确认'],recovered:['status-recovered','已恢复'],muted:['status-muted','已静默']};
+  const [c,t]=m[s]||['status-muted','未知'];
+  return `<span class="status ${c}">${t}</span>`;
+};
+const fmtNum = (v,unit) => {
+  if(unit==='%') return v+'%';
+  if(unit==='元') return '¥'+v;
+  if(unit==='tokens' && v>=1000) return v.toLocaleString();
+  if(typeof v==='number' && v>=1000) return v.toLocaleString();
+  return v;
+};
+const opSymbol = op => ({'>':'>','<':'<','>=':'≥','<=':'≤','==':'='}[op]||op);
+
+function genTrendData(metric,current,threshold){
+  // 60 points, current spike near end
+  const data=[];
+  const now=new Date('2026-08-05T14:35:00');
+  for(let i=0;i<60;i++){
+    const t=new Date(now-(59-i)*60000);
+    const ts=`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+    let v;
+    if(i<45){
+      v=threshold*(0.4+Math.random()*0.3);
+    }else{
+      const p=(i-45)/14;
+      v=threshold*(0.7+p*0.7)+ (Math.random()-0.5)*threshold*0.05;
+    }
+    if(metric==='error_rate') v=Math.max(0,v);
+    data.push({time:ts,value:Math.round(v*100)/100});
+  }
+  data[58].value=current;
+  data[59].value=current;
+  return data;
+}
+
+/* ============ Router ============ */
+function navigate(route, params={}){
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.route===route));
+  const titles={alerts:'告警列表',config:'告警配置',notification:'通知中心',detail:'告警详情'};
+  $('#crumbCur').textContent = titles[route]||'';
+  if(route==='alerts') renderAlertList();
+  else if(route==='config') renderConfig();
+  else if(route==='notification') renderNotification();
+  else if(route==='detail') renderDetail(params.id);
+  if(route!=='detail') location.hash=route;
+}
+
+/* ============ Page: Alert List ============ */
+function renderAlertList(){
+  filterState.page = filterState.page || 1;
+  const stats = {
+    active: ALERTS.filter(a=>a.status==='triggered').length,
+    today: ALERTS.filter(a=>a.triggerTime.startsWith('2026-08-05')).length,
+    recovered: ALERTS.filter(a=>a.status==='recovered').length,
+    pending: ALERTS.filter(a=>a.status==='triggered'||a.status==='acknowledged').length,
+  };
+  let filtered = ALERTS.slice();
+  if(filterState.level) filtered=filtered.filter(a=>a.level===filterState.level);
+  if(filterState.status) filtered=filtered.filter(a=>a.status===filterState.status);
+  if(filterState.agent) filtered=filtered.filter(a=>a.agentId===filterState.agent);
+  if(filterState.metric) filtered=filtered.filter(a=>a.metric===filterState.metric);
+  if(filterState.keyword){
+    const k=filterState.keyword.toLowerCase();
+    filtered=filtered.filter(a=>a.title.toLowerCase().includes(k)||agentName(a.agentId).toLowerCase().includes(k));
+  }
+  const total=filtered.length;
+  const totalPages=Math.max(1,Math.ceil(total/filterState.pageSize));
+  if(filterState.page>totalPages) filterState.page=totalPages;
+  const start=(filterState.page-1)*filterState.pageSize;
+  const pageData=filtered.slice(start,start+filterState.pageSize);
+
+  const html = `
+    <div class="page-title">告警列表</div>
+    <div class="page-desc">实时监控所有 AI Agent 的运行指标告警事件</div>
+
+    <div class="stat-grid">
+      <div class="stat-card c-red">
+        <div class="label">活跃告警</div>
+        <div class="value">${stats.active}</div>
+        <div class="trend up">↑ 较昨日 +2</div>
+        <div class="icon-box">⚠</div>
+      </div>
+      <div class="stat-card c-orange">
+        <div class="label">今日新增</div>
+        <div class="value">${stats.today}</div>
+        <div class="trend up">↑ 较昨日 +1</div>
+        <div class="icon-box">📈</div>
+      </div>
+      <div class="stat-card c-green">
+        <div class="label">已恢复</div>
+        <div class="value">${stats.recovered}</div>
+        <div class="trend down">↓ 已闭环</div>
+        <div class="icon-box">✓</div>
+      </div>
+      <div class="stat-card c-blue">
+        <div class="label">待处理</div>
+        <div class="value">${stats.pending}</div>
+        <div class="trend">需尽快确认</div>
+        <div class="icon-box">⏱</div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="f-item"><label>级别</label>
+        <select id="fLevel"><option value="">全部</option><option value="P0">P0 紧急</option><option value="P1">P1 严重</option><option value="P2">P2 警告</option><option value="P3">P3 提示</option></select>
+      </div>
+      <div class="f-item"><label>状态</label>
+        <select id="fStatus"><option value="">全部</option><option value="triggered">触发中</option><option value="acknowledged">已确认</option><option value="recovered">已恢复</option><option value="muted">已静默</option></select>
+      </div>
+      <div class="f-item"><label>Agent</label>
+        <select id="fAgent"><option value="">全部</option>${AGENTS.map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}</select>
+      </div>
+      <div class="f-item"><label>指标</label>
+        <select id="fMetric"><option value="">全部</option>${Object.entries(METRICS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('')}</select>
+      </div>
+      <div class="f-item"><input type="text" class="search-inp" id="fKeyword" placeholder="🔍 关键词搜索..."></div>
+      <div class="spacer"></div>
+      <button class="btn btn-default btn-sm" onclick="resetFilter()">重置</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>级别</th><th>告警标题</th><th>Agent</th><th>指标</th><th>当前值 / 阈值</th><th>触发时间</th><th>持续</th><th>状态</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          ${pageData.length===0?`<tr><td colspan="9" class="empty">没有匹配的告警记录</td></tr>`:pageData.map(a=>{
+            const m=metricInfo(a.metric);
+            const ratio=Math.min(1.5,a.currentValue/a.threshold);
+            const pct=Math.min(100,ratio/1.5*100);
+            const barColor=ratio>=1?'#ef4444':(ratio>=0.8?'#f97316':'#10b981');
+            return `<tr>
+              <td>${levelTag(a.level)}</td>
+              <td><a style="color:var(--text);font-weight:500" onclick="navigate('detail',{id:'${a.id}'})">${a.title}</a></td>
+              <td>${agentName(a.agentId)}</td>
+              <td><span class="text-sub">${m.name}</span></td>
+              <td>
+                <div class="mini-prog">
+                  <div class="bar"><div class="fill" style="width:${pct}%;background:${barColor}"></div></div>
+                  <span class="val">${fmtNum(a.currentValue,m.unit)} <span class="text-muted">/ ${fmtNum(a.threshold,m.unit)}</span></span>
+                </div>
+              </td>
+              <td class="text-sub mono">${a.triggerTime}</td>
+              <td class="text-sub">${a.duration}</td>
+              <td>${statusTag(a.status)}</td>
+              <td class="cell-actions">
+                <button class="btn-link" onclick="navigate('detail',{id:'${a.id}'})">查看</button>
+                ${a.status==='triggered'?`<button class="btn-link" onclick="ackAlert('${a.id}')">确认</button>`:''}
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      <div class="pager">
+        <div class="info">共 ${total} 条，第 ${filterState.page}/${totalPages} 页</div>
+        <div class="pages">
+          <button onclick="changePage(-1)" ${filterState.page===1?'disabled':''}>‹</button>
+          ${Array.from({length:totalPages},(_,i)=>`<button class="${filterState.page===i+1?'active':''}" onclick="goPage(${i+1})">${i+1}</button>`).join('')}
+          <button onclick="changePage(1)" ${filterState.page===totalPages?'disabled':''}>›</button>
+        </div>
+      </div>
+    </div>
+  `;
+  $('#content').innerHTML=html;
+  // bind filters
+  ['Level','Status','Agent','Metric'].forEach(k=>{
+    const el=$('#f'+k);
+    if(el){el.value=filterState['level'===k.toLowerCase()?'level':k.toLowerCase()]||'';}
+  });
+  // simpler binding
+  if($('#fLevel')){$('#fLevel').value=filterState.level;$('#fLevel').onchange=e=>{filterState.level=e.target.value;filterState.page=1;renderAlertList();}}
+  if($('#fStatus')){$('#fStatus').value=filterState.status;$('#fStatus').onchange=e=>{filterState.status=e.target.value;filterState.page=1;renderAlertList();}}
+  if($('#fAgent')){$('#fAgent').value=filterState.agent;$('#fAgent').onchange=e=>{filterState.agent=e.target.value;filterState.page=1;renderAlertList();}}
+  if($('#fMetric')){$('#fMetric').value=filterState.metric;$('#fMetric').onchange=e=>{filterState.metric=e.target.value;filterState.page=1;renderAlertList();}}
+  if($('#fKeyword')){$('#fKeyword').value=filterState.keyword;$('#fKeyword').oninput=e=>{filterState.keyword=e.target.value;filterState.page=1;renderAlertList();}}
+}
+
+function resetFilter(){
+  filterState={level:'',status:'',agent:'',metric:'',keyword:'',page:1,pageSize:8};
+  renderAlertList();
+}
+function changePage(d){filterState.page+=d;renderAlertList();}
+function goPage(p){filterState.page=p;renderAlertList();}
+function ackAlert(id){
+  const a=ALERTS.find(x=>x.id===id);
+  if(a){a.status='acknowledged';renderAlertList();}
+}
+
+/* ============ Page: Config ============ */
+function renderConfig(){
+  const html=`
+    <div class="page-title">告警配置</div>
+    <div class="page-desc">管理 AI Agent 各项监控指标的告警规则与触发策略</div>
+    <div class="toolbar">
+      <div class="left">
+        <div class="stat-card" style="padding:12px 18px;display:flex;gap:24px;align-items:center">
+          <div><div class="text-sub" style="font-size:12px">规则总数</div><div style="font-size:20px;font-weight:700">${RULES.length}</div></div>
+          <div><div class="text-sub" style="font-size:12px">启用中</div><div style="font-size:20px;font-weight:700;color:var(--ok)">${RULES.filter(r=>r.enabled).length}</div></div>
+          <div><div class="text-sub" style="font-size:12px">已停用</div><div style="font-size:20px;font-weight:700;color:var(--text-muted)">${RULES.filter(r=>!r.enabled).length}</div></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="openDrawer()">+ 新建告警规则</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>规则名称</th><th>Agent</th><th>监控指标</th><th>触发条件</th><th>持续时长</th><th>级别</th><th>状态</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          ${RULES.map(r=>{
+            const m=metricInfo(r.metric);
+            return `<tr>
+              <td><span style="font-weight:500">${r.name}</span><br><span class="text-muted mono" style="font-size:11px">${r.id}</span></td>
+              <td>${agentName(r.agentId)}</td>
+              <td>${m.name}</td>
+              <td class="mono">${m.name} ${opSymbol(r.op)} ${fmtNum(r.threshold,m.unit)}</td>
+              <td>持续 ${r.duration} 分钟</td>
+              <td>${levelTag(r.level)}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="switch ${r.enabled?'on':''}" onclick="toggleRule('${r.id}')"></div>
+                  <span class="text-sub" style="font-size:12px">${r.enabled?'启用':'停用'}</span>
+                </div>
+              </td>
+              <td class="cell-actions">
+                <button class="btn-link" onclick="openDrawer('${r.id}')">编辑</button>
+                <button class="btn-link btn-danger" onclick="deleteRule('${r.id}')">删除</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  $('#content').innerHTML=html;
+}
+
+function toggleRule(id){
+  const r=RULES.find(x=>x.id===id);
+  if(r){r.enabled=!r.enabled;renderConfig();}
+}
+function deleteRule(id){
+  if(confirm('确认删除该告警规则？')){
+    const i=RULES.findIndex(x=>x.id===id);
+    if(i>=0){RULES.splice(i,1);renderConfig();}
+  }
+}
+
+function openDrawer(id){
+  const isEdit=!!id;
+  const r = isEdit ? RULES.find(x=>x.id===id) : {id:'',agentId:AGENTS[0].id,metric:'token_usage',op:'>',threshold:500000,duration:5,level:'P1',enabled:true,channel:'站内信',name:''};
+  $('#drawerTitle').textContent = isEdit?'编辑告警规则':'新建告警规则';
+  $('#drawerBody').innerHTML = `
+    <div class="form-row">
+      <label>规则名称 <span class="req">*</span></label>
+      <input type="text" id="rName" value="${r.name}" placeholder="如：客服Bot Token 消耗异常">
+    </div>
+    <div class="form-row">
+      <label>监控 Agent <span class="req">*</span></label>
+      <select id="rAgent">${AGENTS.map(a=>`<option value="${a.id}" ${a.id===r.agentId?'selected':''}>${a.name}（${a.model}）</option>`).join('')}</select>
+    </div>
+    <div class="form-row">
+      <label>监控指标 <span class="req">*</span></label>
+      <select id="rMetric">${Object.entries(METRICS).map(([k,v])=>`<option value="${k}" ${k===r.metric?'selected':''}>${v.name}（典型阈值 ${v.typical} ${v.unit}）</option>`).join('')}</select>
+      <div class="hint" id="metricHint"></div>
+    </div>
+    <div class="form-row">
+      <label>触发条件 <span class="req">*</span></label>
+      <div class="threshold-row">
+        <select id="rOp">
+          ${['>','<','>=','<=','=='].map(o=>`<option value="${o}" ${o===r.op?'selected':''}>${opSymbol(o)}</option>`).join('')}
+        </select>
+        <input type="number" id="rThreshold" value="${r.threshold}" placeholder="阈值">
+        <span class="text-sub" id="rUnit" style="white-space:nowrap">${metricInfo(r.metric).unit}</span>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>持续时长（分钟）</label>
+      <input type="number" id="rDuration" value="${r.duration}" min="1">
+      <div class="hint">指标持续超过阈值 N 分钟后触发告警，避免瞬时波动误报</div>
+    </div>
+    <div class="form-row">
+      <label>告警级别</label>
+      <select id="rLevel">
+        <option value="P0" ${r.level==='P0'?'selected':''}>P0 紧急（需立即处理）</option>
+        <option value="P1" ${r.level==='P1'?'selected':''}>P1 严重（30分钟内响应）</option>
+        <option value="P2" ${r.level==='P2'?'selected':''}>P2 警告（2小时内响应）</option>
+        <option value="P3" ${r.level==='P3'?'selected':''}>P3 提示（工作时间处理）</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>通知渠道</label>
+      <select id="rChannel">
+        <option value="站内信" selected>站内信（通知中心）</option>
+      </select>
+      <div class="hint">当前系统支持站内信通知，更多渠道（邮件/钉钉/飞书）开发中</div>
+    </div>
+    <div class="form-row">
+      <label>启用状态</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="switch ${r.enabled?'on':''}" id="rEnabledSwitch" onclick="this.classList.toggle('on')"></div>
+        <span class="text-sub" style="font-size:13px">${r.enabled?'启用':'停用'}</span>
+      </div>
+    </div>
+  `;
+  $('#drawerMask').classList.add('show');
+  $('#drawer').classList.add('show');
+  // bind metric hint
+  const updateHint=()=>{
+    const k=$('#rMetric').value;
+    const m=METRICS[k];
+    $('#rUnit').textContent=m.unit;
+    $('#metricHint').textContent=`典型阈值参考：${m.typical} ${m.unit}`;
+  };
+  $('#rMetric').onchange=updateHint;
+  updateHint();
+  $('#drawerSave').onclick=()=>saveRule(isEdit?id:null);
+}
+function closeDrawer(){
+  $('#drawerMask').classList.remove('show');
+  $('#drawer').classList.remove('show');
+}
+function saveRule(id){
+  const name=$('#rName').value.trim();
+  if(!name){alert('请输入规则名称');return;}
+  const data={
+    name,
+    agentId:$('#rAgent').value,
+    metric:$('#rMetric').value,
+    op:$('#rOp').value,
+    threshold:Number($('#rThreshold').value),
+    duration:Number($('#rDuration').value),
+    level:$('#rLevel').value,
+    channel:$('#rChannel').value,
+    enabled:$('#rEnabledSwitch').classList.contains('on'),
+  };
+  if(id){
+    const r=RULES.find(x=>x.id===id);
+    Object.assign(r,data);
+  }else{
+    const newId='R'+String(RULES.length+1).padStart(3,'0');
+    RULES.push({id:newId,...data});
+  }
+  closeDrawer();
+  renderConfig();
+}
+
+/* ============ Page: Notification ============ */
+function renderNotification(){
+  const unread=NOTIFICATIONS.filter(n=>!n.read);
+  const cnt=unread.length;
+  const list = notifTab==='unread'?unread:NOTIFICATIONS;
+  const lvlIco = {P0:['var(--p0-bg)','var(--p0)','🔥'],P1:['var(--p1-bg)','var(--p1)','⚡'],P2:['var(--p2-bg)','var(--p2)','⚠'],P3:['var(--p3-bg)','var(--p3)','ℹ']};
+  const html=`
+    <div class="page-title">通知中心</div>
+    <div class="page-desc">接收所有告警触发的站内信通知</div>
+    <div class="tabs">
+      <div class="tab ${notifTab==='unread'?'active':''}" onclick="switchNotifTab('unread')">未读 <span class="cnt">${unread.length}</span></div>
+      <div class="tab ${notifTab==='all'?'active':''}" onclick="switchNotifTab('all')">全部 <span class="cnt">${NOTIFICATIONS.length}</span></div>
+    </div>
+    <div class="notif-list">
+      ${list.length===0?`<div class="card empty" style="padding:40px">暂无通知</div>`:list.map(n=>{
+        const [bg,c,ico]=lvlIco[n.level];
+        return `<div class="notif-item ${n.read?'':'unread'}" onclick="openNotif('${n.id}')">
+          <div class="lvl-ico" style="background:${bg};color:${c}">${ico}</div>
+          <div class="body">
+            <div class="title">${n.title}</div>
+            <div class="summary">${n.summary}</div>
+            <div class="meta"><span class="agent">${agentName(n.agentId)}</span><span>·</span><span>${n.time}</span></div>
+          </div>
+          ${n.read?'':'<div class="unread-dot"></div>'}
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="notif-settings card" style="padding:20px 24px;margin-top:24px">
+      <h3>通知设置</h3>
+      <div class="setting-row">
+        <div class="info">
+          <div class="t">免打扰时段</div>
+          <div class="d">在指定时段内不推送告警通知（P0 告警除外）</div>
+        </div>
+        <div class="flex" style="align-items:center">
+          <input type="time" id="dndStart" value="${settings.dndStart}" style="height:34px;border:1px solid var(--border);border-radius:6px;padding:0 8px">
+          <span class="text-sub">至</span>
+          <input type="time" id="dndEnd" value="${settings.dndEnd}" style="height:34px;border:1px solid var(--border);border-radius:6px;padding:0 8px">
+          <div class="switch ${settings.dnd?'on':''}" id="dndSwitch" onclick="this.classList.toggle('on');settings.dnd=this.classList.contains('on')"></div>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="info">
+          <div class="t">仅推送 P0/P1 告警</div>
+          <div class="d">仅接收紧急和严重级别的告警通知，减少低级别打扰</div>
+        </div>
+        <div class="switch ${settings.onlyP0P1?'on':''}" onclick="this.classList.toggle('on');settings.onlyP0P1=this.classList.contains('on')"></div>
+      </div>
+      <div class="setting-row">
+        <div class="info">
+          <div class="t">批量标记已读</div>
+          <div class="info d">将当前所有未读通知一键标记为已读</div>
+        </div>
+        <button class="btn btn-default btn-sm" onclick="markAllRead()">全部已读</button>
+      </div>
+    </div>
+  `;
+  $('#content').innerHTML=html;
+}
+function switchNotifTab(t){notifTab=t;renderNotification();}
+function openNotif(id){
+  const n=NOTIFICATIONS.find(x=>x.id===id);
+  if(n){n.read=true;updateBadge();}
+  navigate('detail',{id:n.alertId});
+}
+function markAllRead(){
+  NOTIFICATIONS.forEach(n=>n.read=true);
+  updateBadge();
+  renderNotification();
+}
+function updateBadge(){
+  const c=NOTIFICATIONS.filter(n=>!n.read).length;
+  const b=$('#navBadge');
+  if(b){b.textContent=c;b.style.display=c?'':'none';}
+  const d=$('#bellDot');
+  if(d){d.style.display=c?'':'none';}
+}
+
+/* ============ Page: Detail ============ */
+function renderDetail(id){
+  const a = ALERTS.find(x=>x.id===id);
+  if(!a){
+    $('#content').innerHTML=`<div class="page-title">告警详情</div><div class="card empty" style="padding:40px">未找到对应的告警记录</div>`;
+    return;
+  }
+  const m=metricInfo(a.metric);
+  const rule=RULES.find(r=>r.id===a.ruleId);
+  const ratio=Math.min(1.5,a.currentValue/a.threshold);
+  const pct=Math.min(100,ratio/1.5*100);
+  const barColor=ratio>=1?'#ef4444':(ratio>=0.8?'#f97316':'#10b981');
+  const tl=TIMELINE[a.id]||[{type:'trigger',title:'告警触发',time:a.triggerTime,note:a.desc}];
+  const handles=HANDLE_RECORDS[a.id]||[];
+  const statusBtns = {
+    triggered:`<button class="btn btn-primary" onclick="ackAlertDetail('${a.id}')">确认告警</button><button class="btn btn-default" onclick="muteAlert('${a.id}')">静默</button>`,
+    acknowledged:`<button class="btn btn-default" onclick="recoverAlert('${a.id}')">标记恢复</button>`,
+    recovered:``,
+    muted:`<button class="btn btn-default" onclick="unmuteAlert('${a.id}')">取消静默</button>`,
+  };
+  const html=`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;color:var(--primary);font-size:13px" onclick="navigate('alerts')">
+      <span>‹ 返回告警列表</span>
+    </div>
+    <div class="detail-head">
+      <div class="row1">
+        ${levelTag(a.level)}
+        <h2>${a.title}</h2>
+        ${statusTag(a.status)}
+      </div>
+      <div class="desc">${a.desc}</div>
+      <div class="actions">
+        ${statusBtns[a.status]||''}
+        <button class="btn btn-default" onclick="exportAlert()">导出</button>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="item"><div class="k">Agent</div><div class="v">${agentName(a.agentId)}</div></div>
+      <div class="item"><div class="k">监控指标</div><div class="v">${m.name}</div></div>
+      <div class="item"><div class="k">触发条件</div><div class="v mono">${m.name} ${opSymbol(rule?rule.op:'>')} ${fmtNum(a.threshold,m.unit)}</div></div>
+      <div class="item"><div class="k">告警级别</div><div class="v">${a.level} ${a.level==='P0'?'紧急':a.level==='P1'?'严重':a.level==='P2'?'警告':'提示'}</div></div>
+      <div class="item"><div class="k">当前值</div><div class="v mono" style="color:${barColor}">${fmtNum(a.currentValue,m.unit)}</div></div>
+      <div class="item"><div class="k">阈值</div><div class="v mono">${fmtNum(a.threshold,m.unit)}</div></div>
+      <div class="item"><div class="k">触发时间</div><div class="v mono" style="font-size:13px">${a.triggerTime}</div></div>
+      <div class="item"><div class="k">持续时长</div><div class="v">${a.duration}</div></div>
+    </div>
+
+    <div class="detail-chart">
+      <div class="ctitle">
+        <span>指标趋势（${m.name}）</span>
+        <span style="font-size:12px;font-weight:400;color:var(--text-sub)">最近 60 分钟 · 阈值线 ${fmtNum(a.threshold,m.unit)}</span>
+      </div>
+      <div class="cdesc">红色虚线为告警阈值，曲线为指标实时变化，圆点标注告警触发时刻</div>
+      <div id="chart"></div>
+    </div>
+
+    <div class="timeline">
+      <h3>事件时间线</h3>
+      ${tl.map(e=>{
+        const cls=e.type==='trigger'?'p0':(e.type==='recover'?'ok':'');
+        return `<div class="tl-item">
+          <div class="tl-dot ${cls}"></div>
+          <div class="tl-body">
+            <div class="tl-title">${e.title}</div>
+            <div class="tl-meta">${e.time}</div>
+            <div class="tl-note">${e.note}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="handle-block">
+      <h3>处置记录</h3>
+      <div class="handle-input">
+        <input type="text" id="handleInput" placeholder="输入处置说明，回车提交...">
+        <button class="btn btn-primary" onclick="addHandle('${a.id}')">提交</button>
+      </div>
+      <div class="handle-list">
+        ${handles.length===0?`<div class="empty">暂无处置记录</div>`:handles.map(h=>`
+          <div class="h-item">
+            <div class="av">${h.user.slice(0,1)}</div>
+            <div class="ct">
+              <span class="who">${h.user}</span><span class="tm">${h.time}</span>
+              <div class="tx">${h.text}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  $('#content').innerHTML=html;
+  // render chart
+  setTimeout(()=>renderChart(a),50);
+}
+
+function renderChart(a){
+  const m=metricInfo(a.metric);
+  const data=genTrendData(a.metric,a.currentValue,a.threshold);
+  const el=$('#chart');
+  if(!el) return;
+  if(chartInstance){chartInstance.dispose();chartInstance=null;}
+  chartInstance=echarts.init(el);
+  const option={
+    grid:{left:60,right:20,top:30,bottom:30},
+    tooltip:{trigger:'axis',formatter:p=>{
+      const v=p[0].value;
+      return `${p[0].axisValue}<br/>${m.name}: <b>${fmtNum(v,m.unit)}</b>`;
+    }},
+    xAxis:{type:'category',data:data.map(d=>d.time),axisLine:{lineStyle:{color:'#e5e7eb'}},axisLabel:{color:'#9ca3af',fontSize:11}},
+    yAxis:{type:'value',name:m.unit,nameTextStyle:{color:'#9ca3af'},axisLine:{show:false},splitLine:{lineStyle:{color:'#f3f4f6'}},axisLabel:{color:'#9ca3af',fontSize:11}},
+    series:[{
+      type:'line',smooth:true,symbol:'none',
+      data:data.map(d=>d.value),
+      lineStyle:{color:'#0067d1',width:2},
+      areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(0,103,209,0.25)'},{offset:1,color:'rgba(0,103,209,0.02)'}])},
+      markLine:{
+        symbol:'none',silent:true,
+        data:[{yAxis:a.threshold,lineStyle:{color:'#ef4444',type:'dashed',width:2},label:{formatter:'阈值 '+fmtNum(a.threshold,m.unit),color:'#ef4444',fontSize:11,position:'insideEndTop'}}]
+      },
+      markPoint:{
+        symbol:'circle',symbolSize:8,
+        itemStyle:{color:'#ef4444',borderColor:'#fff',borderWidth:2},
+        label:{show:false},
+        data:[{coord:[58,a.currentValue],value:'触发'}]
+      }
+    }]
+  };
+  chartInstance.setOption(option);
+  window.addEventListener('resize',()=>chartInstance&&chartInstance.resize());
+}
+
+function ackAlertDetail(id){
+  const a=ALERTS.find(x=>x.id===id);
+  if(a){a.status='acknowledged';renderDetail(id);}
+}
+function muteAlert(id){
+  const a=ALERTS.find(x=>x.id===id);
+  if(a){a.status='muted';renderDetail(id);}
+}
+function unmuteAlert(id){
+  const a=ALERTS.find(x=>x.id===id);
+  if(a){a.status='triggered';renderDetail(id);}
+}
+function recoverAlert(id){
+  const a=ALERTS.find(x=>x.id===id);
+  if(a){a.status='recovered';renderDetail(id);}
+}
+function addHandle(id){
+  const inp=$('#handleInput');
+  const tx=inp.value.trim();
+  if(!tx) return;
+  if(!HANDLE_RECORDS[id])HANDLE_RECORDS[id]=[];
+  HANDLE_RECORDS[id].unshift({user:'运维管理员',time:new Date().toLocaleString('zh-CN',{hour12:false}).replace(/\//g,'-'),text:tx});
+  renderDetail(id);
+}
+function exportAlert(){alert('告警详情已导出到剪贴板');}
+
+/* ============ Init ============ */
+document.querySelectorAll('.nav-item').forEach(el=>{
+  el.addEventListener('click',()=>navigate(el.dataset.route));
+});
+$('#globalSearch').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    filterState.keyword=e.target.value;
+    navigate('alerts');
+    setTimeout(()=>{const f=$('#fKeyword');if(f){f.value=e.target.value;}},50);
+  }
+});
+updateBadge();
+
+// route by hash
+const hash=location.hash.replace('#','');
+if(hash==='config'||hash==='notification') navigate(hash);
+else navigate('alerts');
+</script>
+</body>
+</html>
