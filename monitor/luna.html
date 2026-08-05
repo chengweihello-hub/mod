@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentinel · AI Agent 运维告警</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">✦</span><span>sentinel</span><small>OPS / AI</small></div>
+      <div class="workspace-switch"><span class="status-dot"></span><span>生产环境</span><span class="chevron">⌄</span></div>
+      <nav class="nav-group">
+        <p class="nav-label">监控中心</p>
+        <button class="nav-item active" data-page="alerts"><span class="nav-icon">⌁</span>告警列表<span class="nav-count">12</span></button>
+        <button class="nav-item" data-page="rules"><span class="nav-icon">◈</span>告警配置</button>
+        <button class="nav-item" data-page="notifications"><span class="nav-icon">◎</span>通知中心<span class="nav-count pale">4</span></button>
+      </nav>
+      <nav class="nav-group lower">
+        <p class="nav-label">资源管理</p>
+        <button class="nav-item"><span class="nav-icon">⊞</span>Agent 目录</button>
+        <button class="nav-item"><span class="nav-icon">⌘</span>调用链路</button>
+        <button class="nav-item"><span class="nav-icon">◌</span>成本分析</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="system-health"><span class="pulse"></span><div><strong>系统运行正常</strong><small>所有采集器在线</small></div></div>
+        <div class="user-card"><div class="avatar">林</div><div><strong>林默</strong><small>运维管理员</small></div><span>•••</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>运维中心</span><b>/</b><strong id="breadcrumb">告警列表</strong></div>
+        <div class="top-actions"><button class="icon-button" title="搜索">⌕</button><button class="icon-button notification-button" title="通知">♧<i></i></button><button class="help-button">？ 帮助中心</button></div>
+      </header>
+
+      <section class="page-view active" id="alerts-page">
+        <div class="page-heading"><div><p class="eyebrow">THURSDAY, AUG 06 · 10:42 UTC+8</p><h1>告警列表</h1><p class="heading-note">实时掌握 AI Agent 的运行健康度与资源消耗。</p></div><button class="primary-button" id="create-rule-button">＋ 新建告警规则</button></div>
+        <div class="metric-strip">
+          <div class="metric-card"><div class="metric-top"><span>当前告警</span><span class="metric-icon blue">⌁</span></div><strong>24</strong><p><em class="up">↑ 8.2%</em> 较昨日</p></div>
+          <div class="metric-card"><div class="metric-top"><span>待处理</span><span class="metric-icon orange">!</span></div><strong>12</strong><p><em class="down">↓ 3</em> 较昨日</p></div>
+          <div class="metric-card"><div class="metric-top"><span>严重告警</span><span class="metric-icon red">◆</span></div><strong>3</strong><p><em class="up red-text">↑ 1</em> 过去 24 小时</p></div>
+          <div class="metric-card"><div class="metric-top"><span>平均响应时间</span><span class="metric-icon green">◷</span></div><strong>1.8<span class="unit">min</span></strong><p><em class="down">↓ 12.4%</em> 较上周</p></div>
+        </div>
+        <div class="content-panel">
+          <div class="panel-toolbar"><div class="tabs"><button class="tab active">全部 <b>24</b></button><button class="tab">未处理 <b>12</b></button><button class="tab">已确认 <b>8</b></button><button class="tab">已关闭 <b>4</b></button></div><div class="toolbar-tools"><div class="search-box">⌕<input id="alert-search" placeholder="搜索告警名称、Agent..." /></div><button class="filter-button">≡ 筛选</button><button class="filter-button">最近 24 小时 ⌄</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th width="28"> </th><th>告警名称</th><th>Agent / 服务</th><th>指标</th><th>当前值 / 阈值</th><th>级别</th><th>状态</th><th>最近触发</th><th width="36"></th></tr></thead><tbody id="alert-table"></tbody></table></div>
+          <div class="table-footer"><span>显示 1-6 条，共 24 条告警</span><div class="pagination"><button>‹</button><button class="selected">1</button><button>2</button><button>3</button><button>4</button><button>›</button></div></div>
+        </div>
+      </section>
+
+      <section class="page-view" id="rules-page"><div class="page-heading"><div><p class="eyebrow">POLICY ENGINE</p><h1>告警配置</h1><p class="heading-note">定义 Agent 指标异常时的响应策略。</p></div><button class="primary-button" id="new-rule">＋ 新建告警规则</button></div><div class="rules-layout"><div class="content-panel rule-list-panel"><div class="panel-toolbar"><div><strong>告警规则</strong><span class="muted-label"> 8 条规则</span></div><div class="search-box">⌕<input placeholder="搜索规则..." /></div></div><div id="rule-list"></div></div><div class="content-panel rule-editor"><div class="editor-head"><div><p class="eyebrow">RULE EDITOR</p><h2 id="editor-title">编辑告警规则</h2></div><span class="enabled-tag">● 已启用</span></div><div class="form-grid"><label>规则名称<input id="rule-name" value="高 Token 消耗告警" /></label><label>监控 Agent<select><option>客服问答 Agent</option><option>RAG 知识库 Agent</option><option>订单处理 Agent</option></select></label><label>监控指标<select><option>Token 消耗量</option><option>首 Token 响应时间</option><option>错误率</option></select></label><label>聚合方式<select><option>每 5 分钟平均值</option><option>每小时累计值</option><option>单次调用</option></select></label></div><div class="condition-box"><span>当指标</span><select><option>大于</option><option>大于等于</option><option>小于</option></select><input value="1000000" /><span>持续</span><select><option>5 分钟</option><option>10 分钟</option><option>15 分钟</option></select></div><div class="severity-options"><span>告警级别</span><button class="severity-choice selected">● 严重</button><button class="severity-choice warning-choice">● 警告</button><button class="severity-choice info-choice">● 提示</button></div><div class="notify-box"><div><strong>通知接收人</strong><p>触发后发送站内通知和企业微信消息</p></div><span class="avatar-stack"><i>林</i><i>周</i><i>+2</i></span><button class="text-button">管理接收人 →</button></div><div class="editor-actions"><button class="secondary-button">取消</button><button class="primary-button">保存规则</button></div></div></div></section>
+
+      <section class="page-view" id="notifications-page"><div class="page-heading"><div><p class="eyebrow">INBOX / 4 UNREAD</p><h1>通知中心</h1><p class="heading-note">查看分配给你的告警，并快速完成处理。</p></div><button class="secondary-button" id="read-all">全部标为已读</button></div><div class="notification-layout"><div class="content-panel inbox-panel"><div class="inbox-tabs"><button class="active">全部通知</button><button>未读 <b>4</b></button><button>已处理</button></div><div id="notification-list"></div></div><div class="content-panel channel-panel"><div class="panel-title"><div><p class="eyebrow">DELIVERY CHANNELS</p><h2>通知渠道</h2></div><button class="text-button">管理</button></div><div class="channel-row"><span class="channel-logo wecom">W</span><div><strong>企业微信</strong><small>Sentinel 运维群</small></div><span class="channel-status">已连接</span></div><div class="channel-row"><span class="channel-logo mail">@</span><div><strong>邮件</strong><small>lin.mo@sentinel.io 等 4 人</small></div><span class="channel-status">已连接</span></div><div class="channel-row"><span class="channel-logo hook">⌘</span><div><strong>Webhook</strong><small>PagerDuty endpoint</small></div><span class="channel-status muted">未配置</span></div></div></div></section>
+    </main>
+  </div>
+  <div class="drawer-backdrop" id="drawer-backdrop"></div><aside class="detail-drawer" id="detail-drawer"><div class="drawer-head"><div><span class="severity-pill critical">严重</span><p class="eyebrow">ALERT-20240806-0012</p><h2 id="drawer-title">客服问答 Agent · 首 Token 响应过慢</h2></div><button class="close-button" id="close-drawer">×</button></div><div class="drawer-actions"><button class="primary-button" id="ack-button">确认告警</button><button class="secondary-button">更多操作⌄</button></div><div class="drawer-section"><div class="section-label">当前状态</div><div class="state-line"><span class="state-dot red"></span><strong id="drawer-status">未处理</strong><span class="time-stamp">触发于 10:37:24</span></div></div><div class="drawer-section"><div class="section-label">指标快照</div><div class="snapshot"><div><small>当前值</small><strong>4.82 <i>s</i></strong></div><div><small>告警阈值</small><strong>3.00 <i>s</i></strong></div><div><small>超出</small><strong class="red-text">+60.7%</strong></div></div><div class="chart"><div class="chart-labels"><span>5.0s</span><span>3.0s</span><span>1.0s</span></div><svg viewBox="0 0 500 150" preserveAspectRatio="none"><defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0067d1" stop-opacity=".18"/><stop offset="1" stop-color="#0067d1" stop-opacity="0"/></linearGradient></defs><path class="threshold" d="M0 88 L500 88"/><path class="area" d="M0 125 C35 119 45 123 72 110 S110 80 140 98 S178 112 205 72 S245 83 270 58 S300 40 330 65 S350 105 385 85 S420 50 450 58 S475 25 500 32 L500 150 L0 150 Z"/><path class="line" d="M0 125 C35 119 45 123 72 110 S110 80 140 98 S178 112 205 72 S245 83 270 58 S300 40 330 65 S350 105 385 85 S420 50 450 58 S475 25 500 32"/><circle cx="475" cy="30" r="5"/></svg><div class="chart-times"><span>10:00</span><span>10:15</span><span>10:30</span><span>10:42</span></div></div></div><div class="drawer-section"><div class="section-label">关联资源</div><div class="resource-row"><span class="resource-icon">✦</span><div><strong>客服问答 Agent</strong><small>agent-customer-service-prod</small></div><span class="online-tag">运行中</span></div></div><div class="drawer-section timeline-section"><div class="section-label">处理时间线</div><div class="timeline"><div><i class="timeline-dot blue-dot"></i><p><strong>告警已触发</strong><small>系统检测到指标连续 5 分钟超出阈值<br>今天 10:37:24</small></p></div><div><i class="timeline-dot"></i><p><strong>通知已发送</strong><small>已发送至企业微信、邮件<br>今天 10:37:26</small></p></div></div></div></aside>
+  <div class="toast" id="toast">操作已完成</div>
+  <script src="app.js"></script>
+</body>
+</html>
