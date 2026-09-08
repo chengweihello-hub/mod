@@ -1,3 +1,9 @@
+<img width="1360" height="768" alt="88e376c1-f5f8-4dbe-8dfb-08cafcbb0f26" src="https://github.com/user-attachments/assets/2282ede2-6ffe-4ded-9248-cad704e00e0b" />
+<img width="1536" height="864" alt="55d00be4-0caa-4c13-8edf-3902bc7b5d04" src="https://github.com/user-attachments/assets/708eedef-50e9-4fe1-97f5-b1e0f8a50f0c" />
+
+
+
+
 https://sls.aliyun.com/doc/playground/agentloopdemo.html
 
 仔细分析这些trace的input/output与metadata， 聚合提取并创建出3-5个共性标注 并给每条trace打上标注
